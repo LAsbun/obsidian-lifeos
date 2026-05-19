@@ -156,7 +156,7 @@ export type InstanceProfileType = {
 
 export type UserType = {
   name: string;
-  id: number;
+  id?: number | string;
   role: string;
   username: string;
   email: string;

@@ -28,6 +28,28 @@ import {
 } from '../util';
 import type { File } from './File';
 
+function getMemosUserIdFromOwner(owner: string | null | undefined): number | null {
+  const matchedUserId = owner?.match(/^users\/(\d+)$/);
+  if (!matchedUserId?.[1]) {
+    return null;
+  }
+
+  const parsedUserId = Number.parseInt(matchedUserId[1], 10);
+  return Number.isNaN(parsedUserId) ? null : parsedUserId;
+}
+
+function isMemosUserResourceName(value: string | null | undefined): value is string {
+  return Boolean(value?.match(/^users\/[^/]+$/));
+}
+
+function getMemosUserResourceNameFromOwner(owner: string | null | undefined): string | null {
+  return isMemosUserResourceName(owner) ? owner : null;
+}
+
+function celString(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
 export class DailyRecord {
   app: App;
   settings: PluginSettings;
@@ -42,6 +64,7 @@ export class DailyRecord {
   memosVersion: string;
   memosProfile: WorkspaceProfileType | InstanceProfileType;
   memosUserName: string;
+  memosUserResourceName: string | null;
   memosUserId: number | null;
   hasCreatedNewFile: boolean;
 
@@ -73,6 +96,7 @@ export class DailyRecord {
     this.lastTime = window.localStorage.getItem(this.localKey) || '';
     this.locale = locale;
     this.baseURL = origin;
+    this.memosUserResourceName = null;
     this.memosUserId = null;
     this.hasCreatedNewFile = false;
   }
@@ -86,6 +110,11 @@ export class DailyRecord {
       return user.id;
     }
 
+    if (typeof user.id === 'string' && /^\d+$/.test(user.id)) {
+      const parsedUserId = Number.parseInt(user.id, 10);
+      return Number.isNaN(parsedUserId) ? null : parsedUserId;
+    }
+
     const matchedUserId = user.name?.match(/^users\/(\d+)$/);
     if (!matchedUserId?.[1]) {
       return null;
@@ -93,6 +122,30 @@ export class DailyRecord {
 
     const parsedUserId = Number.parseInt(matchedUserId[1], 10);
     return Number.isNaN(parsedUserId) ? null : parsedUserId;
+  }
+
+  private getMemosUserResourceNameFromUser(user?: UserType | null) {
+    if (!user) {
+      return null;
+    }
+
+    if (isMemosUserResourceName(user.name)) {
+      return user.name;
+    }
+
+    if (typeof user.id === 'number' && Number.isInteger(user.id)) {
+      return `users/${user.id}`;
+    }
+
+    if (typeof user.id === 'string' && /^\d+$/.test(user.id)) {
+      return `users/${user.id}`;
+    }
+
+    if (user.username) {
+      return `users/${user.username}`;
+    }
+
+    return null;
   }
 
   async getMemosUserName() {
@@ -107,6 +160,7 @@ export class DailyRecord {
     }
 
     this.memosUserName = '';
+    this.memosUserResourceName = null;
     this.memosUserId = null;
 
     try {
@@ -121,9 +175,18 @@ export class DailyRecord {
       const user = data && typeof data === 'object' && 'user' in data ? data.user : (data as UserType);
       this.memosUserName = user?.name || '';
       this.memosUserId = this.getMemosUserIdFromUser(user);
+      this.memosUserResourceName = this.getMemosUserResourceNameFromUser(user);
     } catch (error) {
       console.warn(`Failed to get user from ${endpoint.url} (version: ${this.memosVersion}): ${error.message}`);
       logMessage(getI18n(this.locale)[`${ERROR_MESSAGE}AUTH_ENDPOINTS_FAILED`], LogLevel.info);
+    }
+
+    if (this.memosUserId === null) {
+      this.memosUserId = getMemosUserIdFromOwner(this.memosProfile?.owner);
+    }
+
+    if (this.memosUserResourceName === null) {
+      this.memosUserResourceName = getMemosUserResourceNameFromOwner(this.memosProfile?.owner);
     }
   }
 
@@ -185,9 +248,19 @@ export class DailyRecord {
       }
 
       let filterParams = {};
-      const currentUserResourceName = this.memosUserId !== null ? `users/${this.memosUserId}` : null;
+      const currentUserResourceName =
+        this.memosUserResourceName ?? (this.memosUserId !== null ? `users/${this.memosUserId}` : null);
 
-      if (this.memosVersion === 'v2.5' || this.memosVersion === 'v2.6') {
+      if (this.memosVersion === 'v2.6') {
+        if (!currentUserResourceName) {
+          throw new Error('Failed to determine the current memos user');
+        }
+
+        filterParams = {
+          state: 'NORMAL',
+          filter: `creator == ${celString(currentUserResourceName)}`,
+        };
+      } else if (this.memosVersion === 'v2.5') {
         if (this.memosUserId === null) {
           throw new Error('Failed to determine the current memos user ID');
         }
