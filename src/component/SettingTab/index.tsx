@@ -1,4 +1,4 @@
-import { Divider, Form, Input, Select, Switch, Tabs, Typography } from 'antd';
+import { Divider, Form, Input, Switch, Tabs, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useState, useEffect } from 'react';
 import { ARCHIVE, AREA, DAILY, MONTHLY, PROJECT, QUARTERLY, RESOURCE, WEEKLY, YEARLY } from '../../constant';
@@ -8,7 +8,8 @@ import type { PluginSettings } from '../../type';
 import { DEFAULT_SETTINGS } from '../../view/SettingTab';
 import { ConfigProvider } from '../ConfigProvider';
 import './index.less';
-import { AutoComplete } from '../AutoComplete';
+import { InlineAutoComplete } from '../InlineAutoComplete';
+import { InlineSelect } from '../InlineSelect';
 import { TopBanner } from '../TopBanner';
 
 export const SettingTab = (props: { settings: PluginSettings; saveSettings: (settings: PluginSettings) => void }) => {
@@ -58,7 +59,7 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
         }}
       >
         <Form.Item name="locale" label={localeMap.LANGUAGE} help={localeMap.LANGUAGE_HELP}>
-          <Select
+          <InlineSelect
             options={[
               { value: '', label: localeMap.LANGUAGE_AUTO },
               { value: 'en', label: 'English' },
@@ -89,9 +90,7 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                   {settings.usePeriodicNotes && (
                     <>
                       <Form.Item name="periodicNotesPath" label={localeMap.SETTING_PERIODIC_NOTES_FOLDER}>
-                        <AutoComplete options={folders}>
-                          <Input placeholder={DEFAULT_SETTINGS.periodicNotesPath} />
-                        </AutoComplete>
+                        <InlineAutoComplete options={folders} placeholder={DEFAULT_SETTINGS.periodicNotesPath} />
                       </Form.Item>
                       <Form.Item
                         help={localeMap.SETTING_HABIT_HEADER_HELP}
@@ -123,7 +122,7 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                         name="weekStart"
                         label={localeMap.SETTING_WEEK_START}
                       >
-                        <Select
+                        <InlineSelect
                           options={[
                             {
                               value: -1,
@@ -200,9 +199,10 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                                 name={`periodicNotesTemplateFilePath${item}`}
                                 label={`${localeMap[item]}${localeMap.SETTING_TEMPLATE}`}
                               >
-                                <AutoComplete options={files}>
-                                  <Input placeholder={`${settings.periodicNotesPath}/Templates/${item}.md`} />
-                                </AutoComplete>
+                                <InlineAutoComplete
+                                  options={files}
+                                  placeholder={`${settings.periodicNotesPath}/Templates/${item}.md`}
+                                />
                               </Form.Item>
                               <Form.Item
                                 help={
@@ -324,24 +324,16 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                   {settings.usePARANotes && (
                     <>
                       <Form.Item name="projectsPath" label={localeMap.SETTING_PROJECTS_FOLDER}>
-                        <AutoComplete options={folders}>
-                          <Input />
-                        </AutoComplete>
+                        <InlineAutoComplete options={folders} />
                       </Form.Item>
                       <Form.Item name="areasPath" label={localeMap.SETTING_AREAS_FOLDER}>
-                        <AutoComplete options={folders}>
-                          <Input />
-                        </AutoComplete>
+                        <InlineAutoComplete options={folders} />
                       </Form.Item>
                       <Form.Item name="resourcesPath" label={localeMap.SETTING_RESOURCES_FOLDER}>
-                        <AutoComplete options={folders}>
-                          <Input />
-                        </AutoComplete>
+                        <InlineAutoComplete options={folders} />
                       </Form.Item>
                       <Form.Item name="archivesPath" label={localeMap.SETTING_ARCHIVES_FOLDER}>
-                        <AutoComplete options={folders}>
-                          <Input />
-                        </AutoComplete>
+                        <InlineAutoComplete options={folders} />
                       </Form.Item>
                       <Form.Item
                         help={localeMap.SETTING_ADVANCED_SETTINGS_HELP}
@@ -353,7 +345,7 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                       {settings.usePARAAdvanced && (
                         <>
                           <Form.Item name="paraIndexFilename" label={localeMap.SETTING_INDEX_FILENAME}>
-                            <Select
+                            <InlineSelect
                               options={[
                                 {
                                   label: localeMap.SETTING_INDEX_FILENAME_FOLDER,
@@ -378,9 +370,7 @@ export const SettingTab = (props: { settings: PluginSettings; saveSettings: (set
                                 name={`${name.toLocaleLowerCase()}sTemplateFilePath`}
                                 label={`${localeMap[name]}${localeMap.SETTING_TEMPLATE}`}
                               >
-                                <AutoComplete options={files}>
-                                  <Input placeholder={`${path}/Template.md`} />
-                                </AutoComplete>
+                                <InlineAutoComplete options={files} placeholder={`${path}/Template.md`} />
                               </Form.Item>
                             );
                           })}
